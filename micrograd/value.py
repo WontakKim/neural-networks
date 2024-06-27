@@ -97,7 +97,7 @@ class Value:
             = ba^(b-1)
         """
         def _backward():
-            self.grad = (other.data * self.data ** (other.data - 1)) * out.grad
+            self.grad = (other * self.data ** (other - 1)) * out.grad
 
         out._backward = _backward
         return out
@@ -146,37 +146,40 @@ class Value:
 
 
 def lol():
-    h = 0.0001
+    # inputs x1,x2
+    x1 = Value(2.0, label='x1')
+    x2 = Value(0.0, label='x2')
 
-    a = Value(2.0, label='a')
-    b = Value(-3.0, label='b')
-    c = Value(10.0, label='c')
-    e = a * b
-    e.label = 'e'
-    d = e + c
-    d.label = 'd'
-    f = Value(-2.0, label='f')
-    L = d * f
-    L.label = 'L'
-    L1 = L.data
 
-    a = Value(2.0, label='a')
-    b = Value(-3.0, label='b')
-    c = Value(10.0, label='c')
-    e = a * b
-    e.label = 'e'
-    d = e + c
-    d.label = 'd'
-    f = Value(-2.0, label='f')
-    L = d * f
-    L.label = 'L'
-    L2 = L.data + h
 
-    tanh = L.tanh()
+    # weights w1,w2
+    w1 = Value(-3.0, label='w1')
+    w2 = Value(1.0, label='w2')
 
-    tanh.backward()
+    # bias of the neuron
+    b = Value(6.8813735870195432, label='b')
 
-    dot = draw_dot(tanh)
+    # x1*w1 + x2*w2 + b
+    x1w1 = x1 * w1
+    x1w1.label = 'x1*w1'
+
+    x2w2 = x2 * w2
+    x2w2.label = 'x2*w2'
+
+    x1w1x2w2 = x1w1 + x2w2
+    x1w1x2w2.label = 'x1*w1 + x2*w2'
+
+    n = x1w1x2w2 + b
+    n.label = 'n'
+    o = n.tanh()
+    o.label = 'o'
+
+    pow = o**2
+    pow.label = "pow"
+
+    pow.backward()
+
+    dot = draw_dot(pow)
     dot.render("./output/draw.gv", view=True)
 
 
