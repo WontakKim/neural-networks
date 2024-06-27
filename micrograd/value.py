@@ -56,7 +56,7 @@ class Value:
     """
     def __mul__(self, other):
         out = Value(
-            data=self.data + other.data,
+            data=self.data * other.data,
             children=(self, other),
             operator="*"
         )
