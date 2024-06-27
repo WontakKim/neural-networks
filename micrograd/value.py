@@ -80,6 +80,29 @@ class Value:
         return out
 
     """
+    f(a) = a^b
+    """
+    def __pow__(self, other):
+        out = Value(
+            data=self.data ** other,
+            children=(self,),
+            operator=f"**{other}"
+        )
+
+        """
+        d(x^n)/dx = nx^(n-1)
+        db/da = [{(a + h)^b} - a^b] / h
+            = [{a^b + ba^(b-1)h + bC2a^(b-2)h ... + h^b} - a^b] / h
+            = [ba^(b-1)h + bC2a^(b-2)h ... + h^b] / h
+            = ba^(b-1)
+        """
+        def _backward():
+            self.grad = (other.data * self.data ** (other.data - 1)) * out.grad
+
+        out._backward = _backward
+        return out
+
+    """
     Ref : https://en.wikipedia.org/wiki/Hyperbolic_functions
     
     tanh(x) = sinh(x) / cosh(x) = (e^(2*x) - 1) / (e^(2*x) + 1)
@@ -90,7 +113,7 @@ class Value:
         out = Value(
             data=tanh,
             children=(self,),
-            label="tanh"
+            operator="tanh"
         )
 
         def _backward():
