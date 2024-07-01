@@ -4,7 +4,15 @@ from value import Value
 from visualizer import draw_dot
 
 
-class Neuron:
+class Module:
+    def zero_grad(self):
+        for params in self.parameters():
+            params.grad = 0.0
+    def parameters(self):
+        return []
+
+
+class Neuron(Module):
     """
     link : https://cs231n.github.io/neural-networks-1/
     """
@@ -20,7 +28,7 @@ class Neuron:
         return self.w + [self.b]
 
 
-class Layer:
+class Layer(Module):
     def __init__(self, input_size, neuron_count):
         self.neurons = [Neuron(input_size) for _ in range(neuron_count)]
 
@@ -32,7 +40,7 @@ class Layer:
         return [params for neuron in self.neurons for params in neuron.parameters()]
 
 
-class MLP:
+class MLP(Module):
     def __init__(self, input_size, output_sizes):
         sizes = [input_size] + output_sizes
         self.layers = [Layer(sizes[i], sizes[i+1]) for i in range(len(output_sizes))]

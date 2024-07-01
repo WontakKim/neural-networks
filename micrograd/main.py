@@ -15,8 +15,8 @@ if __name__ == "__main__":
         loss = sum([(yout - ygt) ** 2 for ygt, yout in zip(ys, ypred)])
 
         print(f"{round} round ({loss.data}) : {ypred}")
-        for p in n.parameters():
-            p.grad = 0.0
+
+        n.zero_grad()
         loss.backward()
 
         for p in n.parameters():
