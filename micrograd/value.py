@@ -1,19 +1,7 @@
 import math
 
-from visualizer import draw_dot
-
 
 class Value:
-    """
-    Derivative:
-
-        L = (f(a + h) - f(a)) / h
-
-    Chain rule:
-
-        dz/dx = dz/dy * dy/dx
-
-    """
     def __init__(self, data, children=(), operator="", label=""):
         self.data = data
         self.grad = 0.0
@@ -23,10 +11,8 @@ class Value:
 
         self._backward = lambda: None
 
-    """
-    f(a) = a + b
-    """
     def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
         out = Value(
             data=self.data + other.data,
             children=(self, other),
@@ -45,16 +31,14 @@ class Value:
                 = h / h
                 = 1
             """
-            self.grad = out.grad
-            other.grad = out.grad
+            self.grad += out.grad
+            other.grad += out.grad
 
         out._backward = _backward
         return out
 
-    """
-    f(a) = a * b
-    """
     def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
         out = Value(
             data=self.data * other.data,
             children=(self, other),
@@ -73,41 +57,33 @@ class Value:
                 = ah / h
                 = a
             """
-            self.grad = other.data * out.grad
-            other.grad = self.data * out.grad
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
 
         out._backward = _backward
         return out
 
-    """
-    f(a) = a^b
-    """
     def __pow__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
         out = Value(
-            data=self.data ** other,
+            data=self.data**other.data,
             children=(self,),
-            operator=f"**{other}"
+            operator=f"**{other.data}"
         )
 
         """
         d(x^n)/dx = nx^(n-1)
         db/da = [{(a + h)^b} - a^b] / h
-            = [{a^b + ba^(b-1)h + bC2a^(b-2)h ... + h^b} - a^b] / h
+            = [{a^b + ba^(b-1)h + bC2a^(b-2)h + ... + h^b} - a^b] / h
             = [ba^(b-1)h + bC2a^(b-2)h ... + h^b] / h
             = ba^(b-1)
         """
         def _backward():
-            self.grad = (other * self.data ** (other - 1)) * out.grad
+            self.grad += (other.data * self.data ** (other.data - 1)) * out.grad
 
         out._backward = _backward
         return out
 
-    """
-    Ref : https://en.wikipedia.org/wiki/Hyperbolic_functions
-    
-    tanh(x) = sinh(x) / cosh(x) = (e^(2*x) - 1) / (e^(2*x) + 1)
-    d/dx * tanh(x) = 1 - tanh(x)^2
-    """
     def tanh(self):
         tanh = (math.exp(self.data * 2) - 1) / (math.exp(self.data * 2) + 1)
         out = Value(
@@ -116,8 +92,12 @@ class Value:
             operator="tanh"
         )
 
+        """
+        tanh(x) = sinh(x) / cosh(x) = (e^(2*x) - 1) / (e^(2*x) + 1)
+        d/dx * tanh(x) = 1 - tanh(x)^2
+        """
         def _backward():
-            self.grad = (1 - tanh ** 2) * out.grad
+            self.grad += (1 - tanh**2) * out.grad
 
         out._backward = _backward
         return out
@@ -141,50 +121,26 @@ class Value:
         build(self)
         return out
 
+    def __neg__(self):
+        return self * -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return self + (-other)
+
+    def __rmul__(self, other):
+        return self * other
+
+    def __truediv__(self, other):
+        return self * other**-1
+
+    def __rtruediv__(self, other):
+        return self * other**-1
+
     def __repr__(self):
-        return f"Value(data={self.data})"
-
-
-def lol():
-    # inputs x1,x2
-    x1 = Value(2.0, label='x1')
-    x2 = Value(0.0, label='x2')
-
-
-
-    # weights w1,w2
-    w1 = Value(-3.0, label='w1')
-    w2 = Value(1.0, label='w2')
-
-    # bias of the neuron
-    b = Value(6.8813735870195432, label='b')
-
-    # x1*w1 + x2*w2 + b
-    x1w1 = x1 * w1
-    x1w1.label = 'x1*w1'
-
-    x2w2 = x2 * w2
-    x2w2.label = 'x2*w2'
-
-    x1w1x2w2 = x1w1 + x2w2
-    x1w1x2w2.label = 'x1*w1 + x2*w2'
-
-    n = x1w1x2w2 + b
-    n.label = 'n'
-    o = n.tanh()
-    o.label = 'o'
-
-    pow = o**2
-    pow.label = "pow"
-
-    pow.backward()
-
-    dot = draw_dot(pow)
-    dot.render("./output/draw.gv", view=True)
-
-
-
-if __name__ == "__main__":
-    lol()
-    # dot = draw_dot(L)
-    # dot.render("./output/draw.gv", view=True)
+        return f"Value(data={self.data}, grad={self.grad})"
